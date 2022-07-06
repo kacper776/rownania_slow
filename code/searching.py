@@ -4,6 +4,7 @@ from queue import Queue
 
 
 def bfs(start: Node, max_len: int) -> dict:
+    # breadth first search
     if start.terminal():
         return start.variable_subs
     q = Queue()

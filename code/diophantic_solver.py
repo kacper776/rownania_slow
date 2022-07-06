@@ -5,6 +5,9 @@ from z3 import Int, Solver, sat, ModelRef
 
 
 def solve_block_eq(blocks_L, blocks_R, X, vanishing_vars) -> list:
+    # given two lists of blocks finds solutions for
+    # all possible set of equalities between them
+    # where solution exists
     def sum_block(block, X):
         return reduce(lambda a, b: a + b.cnt if is_letter(b)
                                    else a + X[b.nr],

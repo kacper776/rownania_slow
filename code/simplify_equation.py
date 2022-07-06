@@ -3,7 +3,10 @@ from copy import copy
 
 
 def simplify_eq(L: list, R: list) -> tuple:
+    # simplifies given equation grouping clusters of same letter
+    # and cutting identical prefix & suffix from equation sides
     def group_letters(side: list):
+        # groups clusters of letters
         new_side = []
         for symbol in side:
             if is_letter(symbol) and new_side and symbol == new_side[-1]:
@@ -13,6 +16,7 @@ def simplify_eq(L: list, R: list) -> tuple:
         return new_side
 
     def find_significant_infix(L: list, R: list) -> tuple:
+        # removes identical prefix & suffix
         redundant_prefix_L = 0
         redundant_prefix_R = 0
         for symbol_L, symbol_R in zip(L, R):

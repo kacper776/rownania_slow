@@ -5,9 +5,12 @@ from curses.ascii import isupper
 
 
 if __name__ == "__main__":
+    # parse input
     equation = input()
     sides = equation.split('=')
-    assert(len(sides) == 2)
+    if len(sides) != 2:
+        print('Incorrect equation')
+        exit(0)
     sides[0] = ''.join(sides[0].split())
     sides[1] = ''.join(sides[1].split())
     L = []
@@ -23,16 +26,25 @@ if __name__ == "__main__":
         else:
             R.append(Letter(ord(symbol), 1))
 
+    # no variables = nothing to do
     if not any(map(is_variable, L)) and not any(map(is_variable, R)):
         print('No variables in equation')
         exit(0)
 
+    # no letters = equation is trivial
+    if not any(map(is_letter, L)) and not any(map(is_letter, R)):
+        print('No letters in equation')
+        exit(0)
+
+    # create starting node
     letter_unwrap = {let.nr: (-1, chr(let.nr))
                      for let in L + R if is_letter(let)}
     variable_subs = {var.nr: ([], [])
                      for var in L + R if is_variable(var)}
     L, R = simplify_eq(L, R)
     start = Node(L, R, letter_unwrap, variable_subs)
+
+    # search the graph
     start_len = len(start)
     max_len = 8 * start_len * start_len + start_len
     result = bfs(start, max_len)
