@@ -1,35 +1,59 @@
 from base import *
 from diophantic_solver import *
-from itertools import combinations
-from copy import copy
+from simplify_equation import *
+from copy import copy, deepcopy
 
 
 class Node(object):
-    def __init__(self, L: list, R: list):
-        self.L, self.R = simplify_eq(L, R)
-        self.letters = set()
-        self.variables = set()
-        for symbol in L + R:
-            if(is_letter(symbol)):
-                self.letters.add(symbol)
-            if(is_variable(symbol)):
-                self.variables.add(symbol)
+    def __init__(self, L: list, R: list, letter_unwrap: dict, variable_subs: dict) -> None:
+        self.L = L
+        self.R = R
+        self.letter_unwrap = letter_unwrap
+        self.variable_subs = variable_subs
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
+        if len(self.L) != len(other.L) or len(self.R) != len(other.R):
+            return False
         for l0, l1 in list(zip(self.L, other.L)):
             if l0 != l1:
+                return False
+            elif is_letter(l0) and l0.cnt != l1.cnt:
                 return False
         for r0, r1 in list(zip(self.R, other.R)):
             if r0 != r1:
                 return False
-        return True  
+            elif is_letter(r0) and r0.cnt != r1.cnt:
+                return False
+        return True
+
+    def __hash__(self) -> int:
+        rep_L, rep_R = representative_eq(self.L, self.R)
+        return hash((tuple(rep_L), tuple(rep_R)))
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.L} = {self.R}'
 
-    def children(self):
-        def merge_blocks(L: list, R: list, letter: Letter, vanishing_vars: set):
-            def get_blocks(side: list, letter: Letter):
+    def __len__(self) -> int:
+        return len(self.L) + len(self.R)
+
+    def terminal(self) -> bool:
+        if all(map(is_variable, self.L + self.R)):
+            left_side = reduce(lambda a, b: a + read_result(self.variable_subs[b.nr]), self.L, '')
+            right_side = reduce(lambda a, b: a + read_result(self.variable_subs[b.nr]), self.R, '')
+            return left_side == right_side
+
+        if len(self.L) != len(self.R):
+            return False
+        for symbol_L, symbol_R in zip(self.L, self.R):
+            if symbol_L != symbol_R:
+                return False
+            if is_letter(symbol_L) and symbol_L.cnt != symbol_R.cnt:
+                return False
+        return True
+
+    def children(self) -> list:
+        def merge_blocks(node: Node, letter: Letter, vanishing_vars: set) -> list:
+            def get_blocks(side: list, letter: Letter) -> list:
                 blocks = []
                 curr_block = []
                 for symbol in side:
@@ -51,15 +75,17 @@ class Node(object):
                     curr_block = []
                 return blocks
 
-            def merge_solution_to_node(solution: ModelRef, letter: Letter):
-                def build_eq_side(side: list):
+            def merge_solution_to_node(solution: ModelRef, letter: Letter,
+                                       vanishing_vars: set, letter_unwrap: dict,
+                                       variable_subs: dict) -> Node:
+                def build_eq_side(side: list) -> list:
                     result = []
                     for symbol in side:
                         if is_letter(symbol):
-                            result.append(symbol)
+                            result.append(copy(symbol))
                         else:
-                            pop_cnt_L = solution[2 * symbol.nr]
-                            pop_cnt_R = solution[2 * symbol.nr + 1]
+                            pop_cnt_L = solution[Int(f'x_{2 * symbol.nr}')].as_long()
+                            pop_cnt_R = solution[Int(f'x_{2 * symbol.nr + 1}')].as_long()
                             if pop_cnt_L > 0:
                                 new_letters = copy(letter)
                                 new_letters.cnt = pop_cnt_L
@@ -70,101 +96,153 @@ class Node(object):
                                 new_letters = copy(letter)
                                 new_letters.cnt = pop_cnt_R
                                 result.append(new_letters)
-                    return result                
+                    return result
 
-                new_L = build_eq_side(L)
-                new_R = build_eq_side(R)
-                return Node(new_L, new_R)
+                def compress_letters(L: list, R: list, letter_unwrap: dict) -> None:
+                    taken_nrs = {let.nr for let in L + R if is_letter(let)}
+                    group_nrs = {}
+                    free_nr = 0
+                    for symbol in L + R:
+                        if symbol == letter:
+                            if symbol.cnt in group_nrs:
+                                symbol.nr = group_nrs[symbol.cnt]
+                            else:
+                                while free_nr in taken_nrs:
+                                    free_nr += 1
+                                group_nrs[symbol.cnt] = free_nr
+                                letter_unwrap[free_nr] = (symbol.cnt, letter_unwrap[symbol.nr])
+                                symbol.nr = free_nr
+                                free_nr += 1
+                            symbol.cnt = 1
 
-            blocks_L = get_blocks(L, letter)
-            blocks_R = get_blocks(R, letter)
+                new_L = build_eq_side(node.L)
+                new_R = build_eq_side(node.R)
+                new_L, new_R = simplify_eq(new_L, new_R)
+                compress_letters(new_L, new_R, letter_unwrap)
+                var_nrs = {var.nr for var in node.L + node.R if is_variable(var)}
+                for nr in var_nrs:
+                    pop_cnt_L = solution[Int(f'x_{2 * nr}')].as_long()
+                    pop_cnt_R = solution[Int(f'x_{2 * nr + 1}')].as_long()
+                    if pop_cnt_L > 0:
+                        variable_subs[nr][0].append((pop_cnt_L, letter_unwrap[letter.nr]))
+                    if pop_cnt_R > 0:
+                        variable_subs[nr][1].append((pop_cnt_R, letter_unwrap[letter.nr]))
+                return Node(new_L, new_R, letter_unwrap, variable_subs)
+
+            blocks_L = get_blocks(node.L, letter)
+            blocks_R = get_blocks(node.R, letter)
             X = {var.nr: f'x_{var.nr}' for block in blocks_L + blocks_R
                                        for var in block  
                                        if is_variable(var)}
             solutions = solve_block_eq(blocks_L, blocks_R, X, vanishing_vars)
-            return [merge_solution_to_node(solution, letter) for solution in solutions]
+            return [merge_solution_to_node(solution, letter, vanishing_vars,
+                                           copy(node.letter_unwrap), deepcopy(node.variable_subs)) 
+                    for solution in solutions]
 
 
-        def merge_pair(letter0: Letter, letter1: Letter):
-            def merge(side: list, result_letter: Letter):
+        def merge_pair(node: Node, letter0: Letter, letter1: Letter, vanishing_vars: set) -> list:
+            def variables_pop(side: list, variable_nrs: set) -> list:
                 result = []
-                for i in range(len(side) - 1):
+                for symbol in side:
+                    if is_variable(symbol):
+                        if symbol.nr * 2 in variable_nrs:
+                            result.append(copy(letter1))
+                        if symbol not in vanishing_vars:
+                            result.append(copy(symbol))
+                        if symbol.nr * 2 + 1 in variable_nrs:
+                            result.append(copy(letter0))
+                    else:
+                        result.append(symbol)
+                return result
+
+            def merge(side: list, result_letter: Letter) -> list:
+                result = []
+                i = 0
+                while i < len(side) - 1:
                     if side[i] == letter0 and side[i + 1] == letter1:
+                        if side[i].cnt > 1:
+                            result.append(Letter(side[i].nr, side[i].cnt - 1))
+                        result.append(copy(result_letter))
+                        if side[i + 1].cnt > 1:
+                            result.append(Letter(side[i + 1].nr, side[i + 1].cnt - 1))
+                        i += 1
+                    elif is_letter(side[i]) or side[i] not in vanishing_vars:
+                        result.append(copy(side[i]))
+                    i += 1
+                if i == len(side) - 1:
+                    result.append(copy(side[-1]))
+                return result
 
-                        result.append(result_letter)
+            result_letter_nr = 0
+            taken_nrs = {let.nr for let in node.L + node.R if is_letter(let)}
+            while result_letter_nr in taken_nrs:
+                result_letter_nr += 1
+            result_letter = Letter(result_letter_nr, 1)
+            all_variable_nrs = {var.nr * 2 + 1 for var in node.L + node.R if is_variable(var)}\
+                               | {var.nr * 2 + 1 for var in node.L + node.R if is_variable(var)}
+
+            result = []
+            for variables_pop_nrs in powerset(all_variable_nrs):
+                if [var.nr for var in vanishing_vars
+                           if var.nr * 2 not in variables_pop_nrs
+                              and var.nr * 2 + 1 not in variables_pop_nrs]:
+                    continue
+                letter_unwrap = copy(node.letter_unwrap)
+                variable_subs = deepcopy(node.variable_subs)
+                letter_unwrap[result_letter_nr] = (0, (letter_unwrap[letter0.nr], letter_unwrap[letter1.nr]))
+                for var_nr in variables_pop_nrs:
+                    if (var_nr & 1) == 0:
+                        variable_subs[var_nr / 2][0].append((1, letter_unwrap[letter1.nr]))
+                    else:
+                        variable_subs[(var_nr - 1) / 2][1].append((1, letter_unwrap[letter0.nr]))
+                L = variables_pop(node.L, variables_pop_nrs)
+                R = variables_pop(node.R, variables_pop_nrs)
+                L = merge(L, result_letter)
+                R = merge(R, result_letter)
+                L, R = simplify_eq(L, R)
+                result.append(Node(L, R, letter_unwrap, variable_subs))
+            return result
+
+        all_variables = {var for var in self.L + self.R if is_variable(var)}
+        all_letters = {Letter(let.nr, 1) for let in self.L + self.R if is_letter(let)}
+        result = []
+        for vanishing_vars in powerset(all_variables):
+            for letter0 in all_letters:
+                for letter1 in all_letters:
+                    if letter0 != letter1:
+                        result += merge_pair(self, letter0, letter1, vanishing_vars)
+                result += merge_blocks(self, letter0, vanishing_vars)
+        return result
 
 
-def simplify_eq(L: list, R: list):
-    def group_letters(side: list):
-        new_side = []
+def representative_eq(L: list, R: list) -> Node:
+    def translate(side: list, letter_nr_trans: dict, free_nr: int):
+        result = []
         for symbol in side:
-            if is_letter(symbol) and new_side and symbol == new_side[-1]:
-                new_side[-1].cnt += symbol.cnt
-            elif is_variable(symbol) or symbol.cnt > 0:
-                new_side.append(symbol)
-        return new_side
-
-    def find_significant_infix(L: list, R: list):
-        redundant_prefix_L = 0
-        redundant_prefix_R = 0
-        for symbol_L, symbol_R in zip(L, R):
-            if symbol_L == symbol_R:
-                if is_letter(symbol_L):
-                    shared_letters_cnt = min(symbol_R.cnt, symbol_L.cnt)
-                    symbol_L.cnt -= shared_letters_cnt
-                    symbol_R.cnt -= shared_letters_cnt
-                    if symbol_L.cnt == 0:
-                        redundant_prefix_L += 1
-                    if symbol_R.cnt == 0:
-                        redundant_prefix_R += 1
-                    if symbol_L.cnt + symbol_L.cnt > 0:
-                        break
-                else:
-                    redundant_prefix_L += 1
-                    redundant_prefix_R += 1
+            if is_variable(symbol):
+                result.append(copy(symbol))
             else:
-                break
-        L = L[redundant_prefix_L :]
-        R = R[redundant_prefix_R :]
-
-        redundant_suffix_L = 0
-        redundant_suffix_R = 0
-        for symbol_L, symbol_R in zip(reversed(L), reversed(R)):
-            if symbol_L == symbol_R:
-                if is_letter(symbol_L):
-                    shared_letters_cnt = min(symbol_R.cnt, symbol_L.cnt)
-                    symbol_L.cnt -= shared_letters_cnt
-                    symbol_R.cnt -= shared_letters_cnt
-                    if symbol_L.cnt == 0:
-                        redundant_suffix_L += 1
-                    if symbol_R.cnt == 0:
-                        redundant_suffix_R += 1
-                    if symbol_L.cnt + symbol_L.cnt > 0:
-                        break
+                if symbol.nr in letter_nr_trans:
+                    result.append(Letter(letter_nr_trans[symbol.nr], symbol.cnt))
                 else:
-                    redundant_suffix_L += 1
-                    redundant_suffix_R += 1
-            else:
-                break
-        L = L[: len(L) - redundant_suffix_L]
-        R = R[: len(R) - redundant_suffix_R]
-        return L, R
+                    letter_nr_trans[free_nr] = symbol.nr
+                    result.append(Letter(free_nr, symbol.cnt))
+                    free_nr += 1
+        return result, free_nr
 
-    L = group_letters(L)
-    R = group_letters(R)
-    L, R = find_significant_infix(L, R)
-    return L, R
+    letter_nr_trans = {}
+    rep_L, free_nr = translate(L, letter_nr_trans, 0)
+    rep_R, _ = translate(R, letter_nr_trans, free_nr)
+    return rep_L, rep_R
 
 
-def equivalent_nodes(node, letters):
-    def name_change(symbol, trans):
-        if(not is_letter(symbol)):
-            return symbol
-        return Letter(trans[symbol.nr], symbol.cnt)
-
-    res = []
-    for trans in combinations(letters, len(node.letters)):
-        L = [name_change(symbol, trans) for symbol in node.L]
-        R = [name_change(symbol, trans) for symbol in node.R]
-        res.append(Node(L, R))
-    return res
+def read_result(result: tuple) -> str:
+    def read_part(part: tuple) -> str:
+        cnt, res = part
+        if cnt == -1:
+            return res
+        if cnt == 0:
+            return read_part(res[0]) + read_part(res[1])
+        return cnt * read_part(res)
+    return reduce(lambda a, b: a + b, [read_part(part) for part in result[0]], '')\
+           + reduce(lambda a, b: a + b, [read_part(part) for part in reversed(result[1])], '')

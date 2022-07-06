@@ -4,11 +4,11 @@ from functools import reduce
 from z3 import Int, Solver, sat, ModelRef
 
 
-def solve_block_eq(blocks_L, blocks_R, X, vanishing_vars):
+def solve_block_eq(blocks_L, blocks_R, X, vanishing_vars) -> list:
     def sum_block(block, X):
         return reduce(lambda a, b: a + b.cnt if is_letter(b)
                                    else a + X[b.nr],
-                      block)
+                      block, 0)
 
     len_L = len(blocks_L)
     len_R = len(blocks_R)
@@ -24,10 +24,10 @@ def solve_block_eq(blocks_L, blocks_R, X, vanishing_vars):
         solver.add(var_l + var_r > 0)
 
     if solver.check() != sat:
-        return None
+        return []
 
     result = []
-    for equalities_cnt in range(min(len_L, len_R)):
+    for equalities_cnt in range(min(len_L, len_R) + 1):
         for nonzero_blocks_L in combinations(blocks_L, equalities_cnt):
             for nonzero_blocks_R in combinations(blocks_R, equalities_cnt):
                 solver.push()
