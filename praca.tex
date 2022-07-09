@@ -41,8 +41,10 @@
 \section{Opis algorytmu}
 
 \subsection{Ogólny zarys}
-Algorytm jako wejście przyjmuje równanie słów, w którym litery są reprezentowane przez małe litery angielskiego alfabetu, a zmienne przez wielkie litery. Rozwiązaniem takiego równania, o ile istnieje jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne -- nieterminalne. 
-\newline
+Algorytm jako wejście przyjmuje równanie słów, w którym litery są reprezentowane przez małe litery angielskiego alfabetu, a zmienne przez wielkie litery. Rozwiązaniem takiego równania, o ile istnieje,
+jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne --- nieterminalne. 
+
+
 Przykładowo jednym z rozwiązań równania $$abYX = XYba$$ jest
 $$
 \begin{cases}
@@ -50,21 +52,28 @@ X = aba \\
 Y = a
 \end{cases}
 $$
+
 Algorytm przeszukuje wszerz graf, którego wierzchołkami są równania słów. 
 W każdym wierzchołku wykonywane są dwa rodzaje transformacji, które przekształcają równianie w inne. W języku grafów tłumaczy się to na istnienie dwóch rodzajów krawędzi z każdego wierzchołka:
 
 \subsubsection*{krawędzie łączenia maksymalnych bloków}
-Przez maksymalny blok litery $a$ w równaniu $r$ będziemy rozumieć nierozszerzalny, spójny ciąg litery $a$ w $r$. Nierozszerzalny znaczy taki, że z każdej jego strony jest brzeg równania lub inna litera lub zmienna i jeżeli jest to zmienna to jej podstawianie nie ma litery $a$ ze strony tego bloku (tzn. nie zaczyna lub nie kończy się na $a$).
-\newline \newline
-Taka krawędź jest pomiędzy wierzchołkami $u$ i $v$, jeżeli z równanie $u$ można przetransformować w równanie $v$ łącząc wszystkie maksymalne bloki jakiejś litery występującej w $u$. Przez złączenie bloku rozumiemy zastąpienie go nową literą, niewystępującą w $u$. Oczywiście bloki tej samej długości powinny zostać złączone w tę samą literę, a różnej długości -- w różne litery.
+Przez maksymalny blok litery $a$ w równaniu $r$ będziemy rozumieć nierozszerzalny, spójny ciąg litery $a$ w $r$. Nierozszerzalny znaczy taki, że z każdej jego strony jest brzeg równania lub inna litera lub zmienna i jeżeli jest to zmienna, to jej podstawianie nie ma litery $a$ ze strony tego bloku (tzn. nie zaczyna lub nie kończy się na $a$).
+
+Taka krawędź jest pomiędzy wierzchołkami $u$ i $v$, jeżeli z równanie $u$ można przekształcić w równanie $v$ łącząc wszystkie maksymalne bloki jakiejś litery występującej w $u$. Przez złączenie bloku rozumiemy zastąpienie go nową literą, niewystępującą w $u$. Oczywiście bloki tej samej długości powinny zostać złączone w tę samą literę, a różnej długości --- w różne litery.
 Różne podstawiania za zmienne mogą implikować różne równości pomiędzy blokami, zatem trzeba będzie rozpatrzeć wszystkie przypadki.
 
 
 \subsubsection*{krawędzie łączenia par liter}
-Innym rodzajem transformacji równania $u$ jest wybranie z niego dwóch liter $a$ i $b$, a następnie zastąpienie każdego wystąpienia pary $ab$ poprzez nową literę spoza $u$.\newline \newline
-Przy czym nie chcemy, by jedna litera z pary $ab$ mogła znaleźć się w podstawieniu za jakąś zmienną, a druga nie, tzn. jeżeli $X$ jest zmienną, której podstawianie zaczyna się literą $b$, nie chcemy skracać pary $ab$ jeśli w $u$ jest fragment $aX$ (analogicznie jeśli podstawianie $X$ kończy się na $a$, nie chcemy skracać $ab$, jeśli w $u$ jest fragment $Xb$). W przeciwnym przypadku w dalszym przeszukiwaniu grafu stracilibyśmy informację, że litera do której złączyliśmy $ab$ jest rzeczywiście równa tej parze liter. Aby móc skrócić taką parę $ab$, będziemy musieli dla każdej zmiennej rozważyć przypadki czy jej podstawianie zaczyna się na $b$ i czy kończy się na $a$.
-\newline\newline\newline
-Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np. $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania - znaczy to, że żadne nie istnieje.\newline
+Innym rodzajem przekształcenia równania $u$ jest wybranie z niego dwóch liter $a$ i $b$, a następnie zastąpienie każdego wystąpienia pary $ab$ poprzez nową literę spoza $u$.
+
+
+Przy czym nie chcemy, by jedna litera z pary $ab$ mogła znaleźć się w podstawieniu za jakąś zmienną, a druga nie, tzn. jeżeli $X$ jest zmienną, której podstawianie zaczyna się literą $b$, nie chcemy skracać pary $ab$ jeśli w $u$ jest fragment $aX$ (analogicznie jeśli podstawianie $X$ kończy się na $a$, nie chcemy skracać $ab$, jeśli w $u$ jest fragment $Xb$). W przeciwnym przypadku w dalszym przeszukiwaniu grafu stracilibyśmy informację, że litera do której złączyliśmy $ab$ jest rzeczywiście równa tej parze liter. Aby móc skrócić taką parę $ab$, będziemy musieli dla każdej zmiennej rozważyć przypadki, czy jej podstawianie zaczyna się na $b$ i czy kończy się na $a$.
+
+
+Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np. $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania --- znaczy to, że żadne nie istnieje.
+
+
+
 Algorytm zaimplementowany jest w języku Python, jego fragmenty będą się pojawiały w dalszej części pracy.
 
 \subsection{reprezentacja słów}
@@ -98,22 +107,24 @@ class Letter(object):
     def __hash__(self) -> int:
         return hash((self.nr, self.cnt))
 \end{verbatim}
-Zmienne posiadają tylko jeden atrybut -- numer, który je indetyfikuje. Litery oprócz indetyfikującego numeru posiadają atrybut $cnt$, który służy krótszemu zapisowi wielokrotnego, spójnego wystąpienia danej litery. Np. zakładając, że litera $a$ ma numer $97$ słowo $aaa$ będzie skrótowo zapisane, jako pojedynczy obiekt Letter o $nr = 97$ i $cnt = 3$.
+Zmienne posiadają tylko jeden atrybut --- numer, który je identyfikuje. Litery oprócz identyfikującego numeru posiadają atrybut $cnt$, który służy krótszemu zapisowi wielokrotnego, spójnego wystąpienia danej litery. Np., zakładając, że litera $a$ ma numer $97$, słowo $aaa$ będzie skrótowo zapisane, jako pojedynczy obiekt Letter o $nr = 97$ i $cnt = 3$.
 
 
 \subsection{reprezentacja podstawień}
-W trakcie działania algorytmu w każdym wierzchołku musi on pamiętać wszystkie aktualne podstawiania za zmienne. Oprócz tego, poniważ przechodząc każdą krawędzią w grafie tworzymy nowe litery, zatem musi też pamiętać ich rozwinięcia, tzn. jakim słowom złożonym z literek wyjściowego równania odpowiadają litery obecne w danym wierzchołku. Np. po złączeniu pary $ab$ w literkę $c$ musimy pamiętać rozwinięcie $c \rightarrow ab$.\newline\newline
-Aby uprościć implementację i oszczędzać zasoby algorytm używa trzech rodzajów rozwinięć liter:
+W trakcie działania algorytmu w każdym wierzchołku musi on pamiętać wszystkie aktualne podstawiania za zmienne. Oprócz tego, ponieważ przechodząc każdą krawędzią w grafie tworzymy nowe litery, zatem musi też pamiętać ich rozwinięcia, tzn.\ jakim słowom złożonym z literek wyjściowego równania odpowiadają litery obecne w danym wierzchołku. Np.\ po złączeniu pary $ab$ w literkę $c$ musimy pamiętać rozwinięcie $c \rightarrow ab$.
+
+
+Aby uprościć implementację i oszczędzać zasoby, algorytm używa trzech rodzajów rozwinięć liter:
 
 \subsubsection*{1)} Rozwinięciem może być dosłownie zapisane słowo złożone z liter z wyjściowego równania. Takie rozwinięcia są używane tylko dla tych właśnie liter, więc zawsze mają postać $a \rightarrow a$.\newline (Algorytm pamięta je jako pary $(-1, a)$.)
 
 \subsubsection*{2)}
-Rozwinięciem może być konkatenacja dwóch innych rozwinięć -- tak dzieje się, gdy łączymy parę liter w inną literę.\newline (Algorytm pamięta je jako pary $(0, (p1, p2))$, gdzie $p1$ i $p2$ ro rozwinięcia.)
+Rozwinięciem może być konkatenacja dwóch innych rozwinięć --- tak dzieje się, gdy łączymy parę liter w inną literę.\newline (Algorytm pamięta je jako pary $(0, (p1, p2))$, gdzie $p1$ i $p2$ to rozwinięcia.)
 
 \subsubsection*{3)}
-Rozwinięciem może być wielokrotne powtórzenie innego rozwinięcia - tak dzieje się, gdy łączymy maksymalne bloki litery do innych liter.\newline (Algorytm pamięta je jako pary $(cnt, p)$, gdzie $cnt > 0$ jest liczbą powtórzeń, a $p$ jest powtórzeniem.)
+Rozwinięciem może być wielokrotne powtórzenie innego rozwinięcia --- tak dzieje się, gdy łączymy maksymalne bloki litery do innych liter.\newline (Algorytm pamięta je jako pary $(cnt, p)$, gdzie $cnt > 0$ jest liczbą powtórzeń, a $p$ jest powtórzeniem.)
 \newline\newline\newline
-Podstawianie za zmienną zawsze będzie ciągiem rozwinięć liter. Podstawiania są reprezentowane jako para list -- jedna oznacza początek podstawienia, druga koniec. Na przykład, gdy stwierdzamy, że zmienna $X$ zaczyna się literą $a$, do listy początkowej podstawienia za $X$ dodajemy rozwinięcie litery $a$.
+Podstawianie za zmienną zawsze będzie ciągiem rozwinięć liter. Podstawiania są reprezentowane jako para list --- jedna oznacza początek podstawienia, druga koniec. Na przykład, gdy stwierdzamy, że zmienna $X$ zaczyna się literą $a$, do listy początkowej podstawienia za $X$ dodajemy rozwinięcie litery $a$.
 \newline\newline
 Zamianę takiej reprezentacji podstawienia w napis (zwykły, pythonowy) realizuje funkcja:
 \begin{verbatim}
@@ -137,7 +148,7 @@ Zauważmy, że lista oznaczająca koniec podstawienia musi być odwrócona, pon
 ----------[tutaj będzie opis funkcji simplify\_eq() i pochodnych]----------
 
 \subsection{reprezentacja grafu}
-Wierzchołki przeszukiwaneg grafu są reprezentowane przez obiekt Node, którego początek implementacji wygląda tak:
+Wierzchołki przeszukiwanego grafu są reprezentowane przez obiekt Node, którego początek implementacji wygląda tak:
 \begin{verbatim}
 class Node(object):
     def __init__(self, L: list, R: list, 
@@ -172,7 +183,7 @@ Atrybuty L oraz R oznaczają słowa będące odpowiednio lewą i prawą stroną 
 ----------[tutaj będzie opis funkcji Node.children() i pochodnych]----------
 
 \subsection{Przeszukiwanie grafu}
-Graf trawersowany jest za pomocą przeszukiwania wszerz - takim sposobem, mimo, że cały graf ma długość wykładniczą względem długości początkowego równania, możemy po nim przechodzić i robić jakikolwiek postęp.
+Graf trawersowany jest za pomocą przeszukiwania wszerz --- takim sposobem, mimo, że cały graf ma długość wykładniczą względem długości początkowego równania, możemy po nim przechodzić i robić jakikolwiek postęp.
 
 \begin{verbatim}
 def bfs(start: Node, max_len: int) -> dict:
@@ -220,12 +231,12 @@ class Node(object):
 
 Są dwie możliwości, kiedy równanie uznajemy za trywialnie spełnione
 \subsubsection*{1)}
-Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ t odowolne słowo natychmiast upraszcza się do pustego.
+Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ to dowolne słowo natychmiast upraszcza się do pustego.
 
 \subsubsection*{2)}
-Równanie zawiera tylko zmienne, a po podstawieniu za nie aktualnych podstawnień otrzymujemy równanie postaci $w=w$. \newline\newline
+Równanie zawiera tylko zmienne, a po podstawieniu za nie aktualnych podstawień otrzymujemy równanie postaci $w=w$. \newline\newline
 
-Dodatkową optymalizacją w przeszukiwaniu grafu jest implementacja metody Node.\_\_hash\_\_(), dzięki której za takie same uznawane są wierzchołki zawierające równania takie same co do zamiany numerów zmiennych -- takie równania nazwiemy izomorficznymi.
+Dodatkową optymalizacją w przeszukiwaniu grafu jest implementacja metody Node.\_\_hash\_\_(), dzięki której za takie same uznawane są wierzchołki zawierające równania takie same co do zamiany numerów zmiennych --- takie równania nazwiemy izomorficznymi.
 
 \begin{verbatim}
 class Node(object):
