@@ -42,7 +42,7 @@
 
 \subsection{Ogólny zarys}
 Algorytm jako wejście przyjmuje równanie słów, w którym litery są reprezentowane przez małe litery angielskiego alfabetu, a zmienne przez wielkie litery. Rozwiązaniem takiego równania, o ile istnieje,
-jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne --- nieterminalne. 
+jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne --- nieterminalne. 
 
 
 Przykładowo jednym z rozwiązań równania $$abYX = XYba$$ jest
@@ -54,27 +54,30 @@ Y = a
 $$
 
 Algorytm przeszukuje wszerz graf, którego wierzchołkami są równania słów. 
-W każdym wierzchołku wykonywane są dwa rodzaje transformacji, które przekształcają równianie w inne. W języku grafów tłumaczy się to na istnienie dwóch rodzajów krawędzi z każdego wierzchołka:
+Przeszukuje te równania, które zawierają litery i zmienne z początkowego równania oraz których długość (rozumiana jako łączna liczba wystąpień liter i zmiennych) nie przekracza $8n^2 + n$, gdzie $n$ jest długością początkowego równania. Zatem przeszukiwany graf, choć wykładniczej względem wyjściowego równania wielkości, jest skończony.
+[dowód poprawności tego we wstępie?]
 
-\subsubsection*{krawędzie łączenia maksymalnych bloków}
-Przez maksymalny blok litery $a$ w równaniu $r$ będziemy rozumieć nierozszerzalny, spójny ciąg litery $a$ w $r$. Nierozszerzalny znaczy taki, że z każdej jego strony jest brzeg równania lub inna litera lub zmienna i jeżeli jest to zmienna, to jej podstawianie nie ma litery $a$ ze strony tego bloku (tzn. nie zaczyna lub nie kończy się na $a$).
 
-Taka krawędź jest pomiędzy wierzchołkami $u$ i $v$, jeżeli z równanie $u$ można przekształcić w równanie $v$ łącząc wszystkie maksymalne bloki jakiejś litery występującej w $u$. Przez złączenie bloku rozumiemy zastąpienie go nową literą, niewystępującą w $u$. Oczywiście bloki tej samej długości powinny zostać złączone w tę samą literę, a różnej długości --- w różne litery.
+W każdym wierzchołku wykonywane są dwa rodzaje transformacji, które przekształcają równianie w inne. W języku grafów tłumaczy się to na istnienie dwóch rodzajów krawędzi z każdego wierzchołka:
+
+\subsubsection*{Krawędzie łączenia maksymalnych bloków}
+Przez maksymalny blok litery $a$ w równaniu $r$ będziemy rozumieć nierozszerzalny, spójny ciąg litery $a$ w $r$. Nierozszerzalny znaczy taki, że z każdej jego strony jest brzeg równania lub inna litera lub zmienna i jeżeli jest to zmienna, to jej podstawianie nie ma litery $a$ ze strony tego bloku (tzn. nie zaczyna lub nie kończy się na $a$).
+
+Taka krawędź jest pomiędzy wierzchołkami $u$ i $v$, jeżeli z równanie $u$ można przekształcić w równanie $v$ łącząc wszystkie maksymalne bloki jakiejś litery występującej w $u$. Przez złączenie bloku rozumiemy zastąpienie go nową literą, niewystępującą w $u$. Oczywiście bloki tej samej długości powinny zostać złączone w tę samą literę, a różnej długości --- w różne litery.
 Różne podstawiania za zmienne mogą implikować różne równości pomiędzy blokami, zatem trzeba będzie rozpatrzeć wszystkie przypadki.
 
 
-\subsubsection*{krawędzie łączenia par liter}
+\subsubsection*{Krawędzie łączenia par liter}
 Innym rodzajem przekształcenia równania $u$ jest wybranie z niego dwóch liter $a$ i $b$, a następnie zastąpienie każdego wystąpienia pary $ab$ poprzez nową literę spoza $u$.
 
 
-Przy czym nie chcemy, by jedna litera z pary $ab$ mogła znaleźć się w podstawieniu za jakąś zmienną, a druga nie, tzn. jeżeli $X$ jest zmienną, której podstawianie zaczyna się literą $b$, nie chcemy skracać pary $ab$ jeśli w $u$ jest fragment $aX$ (analogicznie jeśli podstawianie $X$ kończy się na $a$, nie chcemy skracać $ab$, jeśli w $u$ jest fragment $Xb$). W przeciwnym przypadku w dalszym przeszukiwaniu grafu stracilibyśmy informację, że litera do której złączyliśmy $ab$ jest rzeczywiście równa tej parze liter. Aby móc skrócić taką parę $ab$, będziemy musieli dla każdej zmiennej rozważyć przypadki, czy jej podstawianie zaczyna się na $b$ i czy kończy się na $a$.
+Przy czym nie chcemy, by jedna litera z pary $ab$ mogła znaleźć się w podstawieniu za jakąś zmienną, a druga nie, tzn. jeżeli $X$ jest zmienną, której podstawianie zaczyna się literą $b$, nie chcemy skracać pary $ab$ jeśli w $u$ jest fragment $aX$ (analogicznie jeśli podstawianie $X$ kończy się na $a$, nie chcemy skracać $ab$, jeśli w $u$ jest fragment $Xb$). W przeciwnym przypadku w dalszym przeszukiwaniu grafu stracilibyśmy informację, że litera do której złączyliśmy $ab$ jest rzeczywiście równa tej parze liter. Aby móc skrócić taką parę $ab$, będziemy musieli dla każdej zmiennej rozważyć przypadki, czy jej podstawianie zaczyna się na $b$ i czy kończy się na $a$.
+\newline\newline
+Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np. $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania --- znaczy to, że żadne nie istnieje. Przeszukiwanie zawsze się kończy, dzięki temu, że algorytm pamięta wierzchoki, które już odwiedził i nie rozpatruje ich drugi raz.
 
 
-Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np. $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania --- znaczy to, że żadne nie istnieje.
 
-
-
-Algorytm zaimplementowany jest w języku Python, jego fragmenty będą się pojawiały w dalszej części pracy.
+Algorytm zaimplementowany jest w języku Python, jego fragmenty będą się pojawiały w dalszej części pracy.
 
 \subsection{reprezentacja słów}
 Słowo, czyli ciąg liter i zmiennych jest reprezentowane jako lista następujących obiektów:
@@ -114,9 +117,9 @@ Zmienne posiadają tylko jeden atrybut --- numer, który je identyfikuje. Litery
 W trakcie działania algorytmu w każdym wierzchołku musi on pamiętać wszystkie aktualne podstawiania za zmienne. Oprócz tego, ponieważ przechodząc każdą krawędzią w grafie tworzymy nowe litery, zatem musi też pamiętać ich rozwinięcia, tzn.\ jakim słowom złożonym z literek wyjściowego równania odpowiadają litery obecne w danym wierzchołku. Np.\ po złączeniu pary $ab$ w literkę $c$ musimy pamiętać rozwinięcie $c \rightarrow ab$.
 
 
-Aby uprościć implementację i oszczędzać zasoby, algorytm używa trzech rodzajów rozwinięć liter:
+Aby uprościć implementację i oszczędzać zasoby, algorytm używa trzech rodzajów rozwinięć liter:
 
-\subsubsection*{1)} Rozwinięciem może być dosłownie zapisane słowo złożone z liter z wyjściowego równania. Takie rozwinięcia są używane tylko dla tych właśnie liter, więc zawsze mają postać $a \rightarrow a$.\newline (Algorytm pamięta je jako pary $(-1, a)$.)
+\subsubsection*{1)} Rozwinięciem może być dosłownie zapisane słowo złożone z liter z wyjściowego równania. Takie rozwinięcia są używane tylko dla tych właśnie liter, więc zawsze mają postać $a \rightarrow a$.\newline (Algorytm pamięta je jako pary $(-1, a)$.)
 
 \subsubsection*{2)}
 Rozwinięciem może być konkatenacja dwóch innych rozwinięć --- tak dzieje się, gdy łączymy parę liter w inną literę.\newline (Algorytm pamięta je jako pary $(0, (p1, p2))$, gdzie $p1$ i $p2$ to rozwinięcia.)
@@ -126,7 +129,7 @@ Rozwinięciem może być wielokrotne powtórzenie innego rozwinięcia --- tak dz
 \newline\newline\newline
 Podstawianie za zmienną zawsze będzie ciągiem rozwinięć liter. Podstawiania są reprezentowane jako para list --- jedna oznacza początek podstawienia, druga koniec. Na przykład, gdy stwierdzamy, że zmienna $X$ zaczyna się literą $a$, do listy początkowej podstawienia za $X$ dodajemy rozwinięcie litery $a$.
 \newline\newline
-Zamianę takiej reprezentacji podstawienia w napis (zwykły, pythonowy) realizuje funkcja:
+Zamianę takiej reprezentacji podstawienia w napis (zwykły, pythonowy) realizuje funkcja:
 \begin{verbatim}
 def read_result(result: tuple) -> str:
     # reads substitution for a variable
@@ -142,13 +145,11 @@ def read_result(result: tuple) -> str:
            + reduce(lambda a, b: a + b,
                     [read_part(part) for part in reversed(result[1])], '')
 \end{verbatim}
-Zauważmy, że lista oznaczająca koniec podstawienia musi być odwrócona, ponieważ jeżeli dla zmiennej $X$ najpierw zdecydowaliśmy, że kończy się na $a$, a potem że pozostała część kończy się na $b$, lista końcowa $X$ będzie wyglądała \newline$[<\text{rozwinięcie }a>, <\text{rozwinięcie }b>]$, natomiast taka kolejność decyzji implikuje, że $X$ kończy się na $ba$.
+Zauważmy, że lista oznaczająca koniec podstawienia musi być odwrócona, ponieważ jeżeli dla zmiennej $X$ najpierw zdecydowaliśmy, że kończy się na $a$, a potem że pozostała część kończy się na $b$, lista końcowa $X$ będzie wyglądała \newline$[\text{<rozwinięcie }a\text{>, <rozwinięcie }b\text{>}]$, natomiast taka kolejność decyzji implikuje, że $X$ kończy się na $ba$.
 
-\subsection{upraszczanie równań}
-----------[tutaj będzie opis funkcji simplify\_eq() i pochodnych]----------
 
 \subsection{reprezentacja grafu}
-Wierzchołki przeszukiwanego grafu są reprezentowane przez obiekt Node, którego początek implementacji wygląda tak:
+Wierzchołki przeszukiwanego grafu są reprezentowane przez obiekt Node, który posiada cztery atrybuty:
 \begin{verbatim}
 class Node(object):
     def __init__(self, L: list, R: list, 
@@ -158,29 +159,24 @@ class Node(object):
         self.letter_unwrap = letter_unwrap
         self.variable_subs = variable_subs
 
-    def __eq__(self, other) -> bool:
-        if len(self.L) != len(other.L) or len(self.R) != len(other.R):
-            return False
-        for l0, l1 in list(zip(self.L, other.L)):
-            if l0 != l1:
-                return False
-            elif is_letter(l0) and l0.cnt != l1.cnt:
-                return False
-        for r0, r1 in list(zip(self.R, other.R)):
-            if r0 != r1:
-                return False
-            elif is_letter(r0) and r0.cnt != r1.cnt:
-                return False
-        return True
-
-    def __len__(self) -> int:
-        return len(self.L) + len(self.R)
-
     (...)
 \end{verbatim}
 Atrybuty L oraz R oznaczają słowa będące odpowiednio lewą i prawą stroną równania reprezentowanego przez ten wierzchołek. Atrybut letter\_unwrap to słownik zawierający dla każdego numeru litery z równania jej rozwinięcie. variable\_subs to również słownik, który dla każdego numeru zmiennej z równiania trzyma jej aktualne podstawianie.
+
+
+Chcąc znaleźć dzieci danego wierzchołka algorytm iteruje się po wszystkich podzbiorach zmiennych w równaniu i tworzy dzieci nieposiadające tych zmiennych --- tzn. takie, w których podstawienie za te zmienne jest już gotowe i nie będzie rozszerzane. Następnie dla każdego takiego podzbioru szuka wierzchołków do których prowadzą oba rodzaje krawędzi.
+
+\subsubsection*{Dzieci względem krawędzi łączenia maksymalnych bloków}
+Algorytm iteruje się po wszystkich literach w równaniu i próbuje łączyć maksymalne bloki tej litery (dla każdej powstanie rozłączny zbiór dzieci).
+Aby połączyć maksymalne bloki ustalonej litery $a$ najpierw trzeba te bloki znaleźć. Dla każdej zmiennej $X$ z równania przez $X_L$ i $X_R$ oznaczymy długość spójnego bloku liter $a$, który w szukanym rozwiązaniu jest odpowiednio z lewej i z prawej strony podstawienia za $X$. Wtedy długość każdego bloku liter $a$ można przedstawić jako sumę stałych oraz tak opisanych zmiennych. Np. w słowie $abXaaaY$ bloki litery $a$ mają długość $1$, $X_L$, $X_R + 3$, $Y_L + 3$ oraz $Y_R$.
+
+Dalej -- interesuje nas, które z bloków po lewej stronie równania będą odpowiadać którym z prawej strony. Zatem, jeżeli po lewej stronie równania są po kolei bloki dłogości $l_1, l_2, ...., l_n$, a po prawej $r_1, r_2, ..., r_m$, algorytm sprawdzi wszystkie możliwe zbiory równości pomiędzy blokami z lewej i z prawej, takie, że jeżeli w zbiorze są równości $l_a = r_b$ oraz $l_c = r_d$ i $a < c$ to $b < d$ (gdy $a < c$ nie może być takiej sytuacji, że blok nr $a$ z lewej strony odpowiada blokowi nr $b$ z prawej, a blok nr $c$ z lewej odpowiada blokowi nr $d$ z prawej i jednocześnie $d > b$). Oczywiście taki zbiór równości nie zawsze ma rozwiązanie. Aby sprawdzać istnienie rozwiązania takiego zbioru równać diofantycznych, oraz znajdować te rozwiązania użyta została zewnętrzna bibloteka Z3 stworzona przez Microsoft Research.
+
+\subsubsection*{Dzieci względem krawędzi łączenia par liter}
+Algorytm iteruje się po wszystkich parach $(a, b)$ różnych liter z równania i próbuje złączyć parę $ab$.
+Dla danej pary $ab$ dla każdej zmiennej z równania sprawdzane są wszystkie możliwości tego, czy w szukanym rozwiązaniu zmienna zaczyna się na $b$ i czy kończy się na $a$. Dla kazdej takiej możliwości, dla każdej zmiennaj $X$, jeżeli zaczyna się ona na $b$ jest zastępowana przez $bX$, a poćzątek jej aktualnego podstawienia jest wydłużany o $b$. Analogicznie, jeżeli zaczyna się ona na $a$ jest zastępowana przez $Xa$, a koniec jej aktualnego podstawienia jest wydłużany o $a$. Następnie każda para $ab$ występująca w równaniu zastępowana jest przez nową literę $c$, spoza równania.
 \newline\newline
-----------[tutaj będzie opis funkcji Node.children() i pochodnych]----------
+Dla niektórych równań można bardzo łatwo znaleźć równoważne równanie, które jest krótsze. Jeżeli strony równania mają wspólny prefiks (lub wspólny prefiks), można go usunąć. Przykładowo równanie $aXYba = aXXYa$ można uprościć do $Yb = XY$. Za każdym razem, gdy algorytm tworzy dziecko wierzchołka, upraszcza jego równanie w ten sposób, aby zredukować liczbę wierzchołków do przeszukania.
 
 \subsection{Przeszukiwanie grafu}
 Graf trawersowany jest za pomocą przeszukiwania wszerz --- takim sposobem, mimo, że cały graf ma długość wykładniczą względem długości początkowego równania, możemy po nim przechodzić i robić jakikolwiek postęp.
@@ -205,7 +201,7 @@ def bfs(start: Node, max_len: int) -> dict:
     return {}
 \end{verbatim}
 
-Metoda Node.terminal() sprawdza, czy wierzchołek reprezentuje trywialnie spełnione równanie, w którym każde podstawianie za zmienną jest niepuste:
+Metoda Node.terminal() sprawdza, czy wierzchołek reprezentuje trywialnie spełnione równanie, w którym każde podstawianie za zmienną jest niepuste:
 
 \begin{verbatim}
 class Node(object):
@@ -231,7 +227,7 @@ class Node(object):
 
 Są dwie możliwości, kiedy równanie uznajemy za trywialnie spełnione
 \subsubsection*{1)}
-Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ to dowolne słowo natychmiast upraszcza się do pustego.
+Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ to dowolne słowo natychmiast upraszcza się do pustego.
 
 \subsubsection*{2)}
 Równanie zawiera tylko zmienne, a po podstawieniu za nie aktualnych podstawień otrzymujemy równanie postaci $w=w$. \newline\newline
