@@ -42,8 +42,9 @@
 
 \subsection{Ogólny zarys}
 Algorytm jako wejście przyjmuje równanie słów, w którym litery są reprezentowane przez małe litery angielskiego alfabetu, a zmienne przez wielkie litery. Rozwiązaniem takiego równania, o ile istnieje,
-jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne --- nieterminalne. 
-
+jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa.
+%W języku gramatyk bezkontekstowych litery to symbole terminalne, zmienne --- nieterminalne. 
+%Artur: jakich gramatyk - tu nie ma żadnych gramatyk.
 
 Przykładowo jednym z rozwiązań równania $$abYX = XYba$$ jest
 $$
@@ -55,8 +56,8 @@ $$
 
 Algorytm przeszukuje wszerz graf, którego wierzchołkami są równania słów. 
 Przeszukuje te równania, które zawierają litery i zmienne z początkowego równania oraz których długość (rozumiana jako łączna liczba wystąpień liter i zmiennych) nie przekracza $8n^2 + n$, gdzie $n$ jest długością początkowego równania. Zatem przeszukiwany graf, choć wykładniczej względem wyjściowego równania wielkości, jest skończony.
-[dowód poprawności tego we wstępie?]
-
+%[dowód poprawności tego we wstępie?]
+%Artur: Cytownaie, że tyle wystarczy.
 
 W każdym wierzchołku wykonywane są dwa rodzaje transformacji, które przekształcają równianie w inne. W języku grafów tłumaczy się to na istnienie dwóch rodzajów krawędzi z każdego wierzchołka:
 
@@ -72,14 +73,16 @@ Innym rodzajem przekształcenia równania $u$ jest wybranie z niego dwóch liter
 
 
 Przy czym nie chcemy, by jedna litera z pary $ab$ mogła znaleźć się w podstawieniu za jakąś zmienną, a druga nie, tzn. jeżeli $X$ jest zmienną, której podstawianie zaczyna się literą $b$, nie chcemy skracać pary $ab$ jeśli w $u$ jest fragment $aX$ (analogicznie jeśli podstawianie $X$ kończy się na $a$, nie chcemy skracać $ab$, jeśli w $u$ jest fragment $Xb$). W przeciwnym przypadku w dalszym przeszukiwaniu grafu stracilibyśmy informację, że litera do której złączyliśmy $ab$ jest rzeczywiście równa tej parze liter. Aby móc skrócić taką parę $ab$, będziemy musieli dla każdej zmiennej rozważyć przypadki, czy jej podstawianie zaczyna się na $b$ i czy kończy się na $a$.
-\newline\newline
-Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np. $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania --- znaczy to, że żadne nie istnieje. Przeszukiwanie zawsze się kończy, dzięki temu, że algorytm pamięta wierzchoki, które już odwiedził i nie rozpatruje ich drugi raz.
+%Artur: dlaczego nic nie ma o tym przypadku dla bloków?
+
+
+Przeszukiwanie grafu kończy się, gdy dojdziemy do wierzchołka, który reprezentuje równanie, które w oczywisty sposób jest spełnione np.\ $a=a$. Może też być tak, że po przeszukaniu całego grafu nie znajdziemy rozwiązania --- znaczy to, że żadne nie istnieje. Przeszukiwanie zawsze się kończy, dzięki temu, że algorytm pamięta wierzchołki, które już odwiedził i nie rozpatruje ich drugi raz.
 
 
 
 Algorytm zaimplementowany jest w języku Python, jego fragmenty będą się pojawiały w dalszej części pracy.
 
-\subsection{reprezentacja słów}
+\subsection{Reprezentacja słów}
 Słowo, czyli ciąg liter i zmiennych jest reprezentowane jako lista następujących obiektów:
 \begin{verbatim}
 class Variable(object):
@@ -113,22 +116,25 @@ class Letter(object):
 Zmienne posiadają tylko jeden atrybut --- numer, który je identyfikuje. Litery oprócz identyfikującego numeru posiadają atrybut $cnt$, który służy krótszemu zapisowi wielokrotnego, spójnego wystąpienia danej litery. Np., zakładając, że litera $a$ ma numer $97$, słowo $aaa$ będzie skrótowo zapisane, jako pojedynczy obiekt Letter o $nr = 97$ i $cnt = 3$.
 
 
-\subsection{reprezentacja podstawień}
+\subsection{Reprezentacja podstawień}
 W trakcie działania algorytmu w każdym wierzchołku musi on pamiętać wszystkie aktualne podstawiania za zmienne. Oprócz tego, ponieważ przechodząc każdą krawędzią w grafie tworzymy nowe litery, zatem musi też pamiętać ich rozwinięcia, tzn.\ jakim słowom złożonym z literek wyjściowego równania odpowiadają litery obecne w danym wierzchołku. Np.\ po złączeniu pary $ab$ w literkę $c$ musimy pamiętać rozwinięcie $c \rightarrow ab$.
-
+%Artur: ale to jest informacja na krawędzi: to samo równanie można uzyskać jako różne kompresje
+%i te same litery mogą odpowiadać różnym parom w różnych równaniach.
 
 Aby uprościć implementację i oszczędzać zasoby, algorytm używa trzech rodzajów rozwinięć liter:
 
-\subsubsection*{1)} Rozwinięciem może być dosłownie zapisane słowo złożone z liter z wyjściowego równania. Takie rozwinięcia są używane tylko dla tych właśnie liter, więc zawsze mają postać $a \rightarrow a$.\newline (Algorytm pamięta je jako pary $(-1, a)$.)
+\begin{enumerate}
+	\item Rozwinięciem może być jawnie zapisane słowo złożone z liter z wyjściowego równania. Takie rozwinięcia są używane tylko dla tych właśnie liter, więc zawsze mają postać $a \rightarrow a$.\newline (Algorytm pamięta je jako pary $(-1, a)$.)
 
-\subsubsection*{2)}
-Rozwinięciem może być konkatenacja dwóch innych rozwinięć --- tak dzieje się, gdy łączymy parę liter w inną literę.\newline (Algorytm pamięta je jako pary $(0, (p1, p2))$, gdzie $p1$ i $p2$ to rozwinięcia.)
+	\item Rozwinięciem może być konkatenacja dwóch innych rozwinięć --- tak dzieje się, gdy łączymy parę liter w inną literę.\newline (Algorytm pamięta je jako pary $(0, (p1, p2))$, gdzie $p1$ i $p2$ to rozwinięcia.)
 
-\subsubsection*{3)}
-Rozwinięciem może być wielokrotne powtórzenie innego rozwinięcia --- tak dzieje się, gdy łączymy maksymalne bloki litery do innych liter.\newline (Algorytm pamięta je jako pary $(cnt, p)$, gdzie $cnt > 0$ jest liczbą powtórzeń, a $p$ jest powtórzeniem.)
-\newline\newline\newline
+	\item Rozwinięciem może być wielokrotne powtórzenie innego rozwinięcia --- tak dzieje się, gdy łączymy maksymalne bloki litery do innych liter.\newline (Algorytm pamięta je jako pary $(cnt, p)$, gdzie $cnt > 0$ jest liczbą powtórzeń, a $p$ jest powtórzeniem.)
+
+\end{enumerate}
+
+
 Podstawianie za zmienną zawsze będzie ciągiem rozwinięć liter. Podstawiania są reprezentowane jako para list --- jedna oznacza początek podstawienia, druga koniec. Na przykład, gdy stwierdzamy, że zmienna $X$ zaczyna się literą $a$, do listy początkowej podstawienia za $X$ dodajemy rozwinięcie litery $a$.
-\newline\newline
+
 Zamianę takiej reprezentacji podstawienia w napis (zwykły, pythonowy) realizuje funkcja:
 \begin{verbatim}
 def read_result(result: tuple) -> str:
@@ -164,18 +170,18 @@ class Node(object):
 Atrybuty L oraz R oznaczają słowa będące odpowiednio lewą i prawą stroną równania reprezentowanego przez ten wierzchołek. Atrybut letter\_unwrap to słownik zawierający dla każdego numeru litery z równania jej rozwinięcie. variable\_subs to również słownik, który dla każdego numeru zmiennej z równiania trzyma jej aktualne podstawianie.
 
 
-Chcąc znaleźć dzieci danego wierzchołka algorytm iteruje się po wszystkich podzbiorach zmiennych w równaniu i tworzy dzieci nieposiadające tych zmiennych --- tzn. takie, w których podstawienie za te zmienne jest już gotowe i nie będzie rozszerzane. Następnie dla każdego takiego podzbioru szuka wierzchołków do których prowadzą oba rodzaje krawędzi.
+Chcąc znaleźć dzieci danego wierzchołka algorytm iteruje się po wszystkich podzbiorach zmiennych w równaniu i tworzy dzieci nieposiadające tych zmiennych --- tzn.\ takie, w których podstawienie za te zmienne jest już gotowe i nie będzie rozszerzane. Następnie dla każdego takiego podzbioru szuka wierzchołków do których prowadzą oba rodzaje krawędzi.
 
 \subsubsection*{Dzieci względem krawędzi łączenia maksymalnych bloków}
 Algorytm iteruje się po wszystkich literach w równaniu i próbuje łączyć maksymalne bloki tej litery (dla każdej powstanie rozłączny zbiór dzieci).
-Aby połączyć maksymalne bloki ustalonej litery $a$ najpierw trzeba te bloki znaleźć. Dla każdej zmiennej $X$ z równania przez $X_L$ i $X_R$ oznaczymy długość spójnego bloku liter $a$, który w szukanym rozwiązaniu jest odpowiednio z lewej i z prawej strony podstawienia za $X$. Wtedy długość każdego bloku liter $a$ można przedstawić jako sumę stałych oraz tak opisanych zmiennych. Np. w słowie $abXaaaY$ bloki litery $a$ mają długość $1$, $X_L$, $X_R + 3$, $Y_L + 3$ oraz $Y_R$.
+Aby połączyć maksymalne bloki ustalonej litery $a$ najpierw trzeba te bloki znaleźć. Dla każdej zmiennej $X$ z równania przez $X_L$ i $X_R$ oznaczymy długość spójnego bloku liter $a$, który w szukanym rozwiązaniu jest odpowiednio z lewej i z prawej strony podstawienia za $X$. Wtedy długość każdego bloku liter $a$ można przedstawić jako sumę stałych oraz tak opisanych zmiennych. Np.\ w słowie $abXaaaY$ bloki litery $a$ mają długość $1$, $X_L$, $X_R + 3$, $Y_L + 3$ oraz $Y_R$.
 
-Dalej -- interesuje nas, które z bloków po lewej stronie równania będą odpowiadać którym z prawej strony. Zatem, jeżeli po lewej stronie równania są po kolei bloki dłogości $l_1, l_2, ...., l_n$, a po prawej $r_1, r_2, ..., r_m$, algorytm sprawdzi wszystkie możliwe zbiory równości pomiędzy blokami z lewej i z prawej, takie, że jeżeli w zbiorze są równości $l_a = r_b$ oraz $l_c = r_d$ i $a < c$ to $b < d$ (gdy $a < c$ nie może być takiej sytuacji, że blok nr $a$ z lewej strony odpowiada blokowi nr $b$ z prawej, a blok nr $c$ z lewej odpowiada blokowi nr $d$ z prawej i jednocześnie $d > b$). Oczywiście taki zbiór równości nie zawsze ma rozwiązanie. Aby sprawdzać istnienie rozwiązania takiego zbioru równać diofantycznych, oraz znajdować te rozwiązania użyta została zewnętrzna bibloteka Z3 stworzona przez Microsoft Research.
+Dalej --- interesuje nas, które z bloków po lewej stronie równania będą odpowiadać którym z prawej strony. Zatem, jeżeli po lewej stronie równania są po kolei bloki długości $l_1, l_2, ...., l_n$, a po prawej $r_1, r_2, ..., r_m$, algorytm sprawdzi wszystkie możliwe zbiory równości pomiędzy blokami z lewej i z prawej, takie, że jeżeli w zbiorze są równości $l_a = r_b$ oraz $l_c = r_d$ i $a < c$ to $b < d$ (gdy $a < c$ nie może być takiej sytuacji, że blok nr $a$ z lewej strony odpowiada blokowi nr $b$ z prawej, a blok nr $c$ z lewej odpowiada blokowi nr $d$ z prawej i jednocześnie $d > b$). Oczywiście taki zbiór równości nie zawsze ma rozwiązanie. Aby sprawdzać istnienie rozwiązania takiego zbioru równać diofantycznych, oraz znajdować te rozwiązania użyta została zewnętrzna biblioteka Z3 stworzona przez Microsoft Research.
 
 \subsubsection*{Dzieci względem krawędzi łączenia par liter}
 Algorytm iteruje się po wszystkich parach $(a, b)$ różnych liter z równania i próbuje złączyć parę $ab$.
-Dla danej pary $ab$ dla każdej zmiennej z równania sprawdzane są wszystkie możliwości tego, czy w szukanym rozwiązaniu zmienna zaczyna się na $b$ i czy kończy się na $a$. Dla kazdej takiej możliwości, dla każdej zmiennaj $X$, jeżeli zaczyna się ona na $b$ jest zastępowana przez $bX$, a poćzątek jej aktualnego podstawienia jest wydłużany o $b$. Analogicznie, jeżeli zaczyna się ona na $a$ jest zastępowana przez $Xa$, a koniec jej aktualnego podstawienia jest wydłużany o $a$. Następnie każda para $ab$ występująca w równaniu zastępowana jest przez nową literę $c$, spoza równania.
-\newline\newline
+Dla danej pary $ab$ dla każdej zmiennej z równania sprawdzane są wszystkie możliwości tego, czy w szukanym rozwiązaniu zmienna zaczyna się na $b$ i czy kończy się na $a$. Dla każdej takiej możliwości, dla każdej zmiennej $X$, jeżeli zaczyna się ona na $b$ jest zastępowana przez $bX$, a początek jej aktualnego podstawienia jest wydłużany o $b$. Analogicznie, jeżeli zaczyna się ona na $a$ jest zastępowana przez $Xa$, a koniec jej aktualnego podstawienia jest wydłużany o $a$. Następnie każda para $ab$ występująca w równaniu zastępowana jest przez nową literę $c$, spoza równania.
+
 Dla niektórych równań można bardzo łatwo znaleźć równoważne równanie, które jest krótsze. Jeżeli strony równania mają wspólny prefiks (lub wspólny prefiks), można go usunąć. Przykładowo równanie $aXYba = aXXYa$ można uprościć do $Yb = XY$. Za każdym razem, gdy algorytm tworzy dziecko wierzchołka, upraszcza jego równanie w ten sposób, aby zredukować liczbę wierzchołków do przeszukania.
 
 \subsection{Przeszukiwanie grafu}
@@ -226,11 +232,12 @@ class Node(object):
 \end{verbatim}
 
 Są dwie możliwości, kiedy równanie uznajemy za trywialnie spełnione
-\subsubsection*{1)}
-Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ to dowolne słowo natychmiast upraszcza się do pustego.
 
-\subsubsection*{2)}
-Równanie zawiera tylko zmienne, a po podstawieniu za nie aktualnych podstawień otrzymujemy równanie postaci $w=w$. \newline\newline
+\begin{enumerate}
+	\item Równanie jest puste. Ponieważ w każdym kroku upraszczamy równania, każde równanie postaci $w=w$, gdzie $w$ to dowolne słowo, natychmiast upraszcza się do pustego.
+
+\item Równanie zawiera tylko zmienne, a po podstawieniu za nie aktualnych podstawień otrzymujemy równanie postaci $w=w$.
+\end{enumerate}
 
 Dodatkową optymalizacją w przeszukiwaniu grafu jest implementacja metody Node.\_\_hash\_\_(), dzięki której za takie same uznawane są wierzchołki zawierające równania takie same co do zamiany numerów zmiennych --- takie równania nazwiemy izomorficznymi.
 
