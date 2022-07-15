@@ -50,6 +50,14 @@ class Node(object):
             return left_side == right_side
 
         return not self.L and not self.R
+    
+    def bad(self):
+        if self.L and self.R:
+            if is_letter(self.L[0]) and is_letter(self.R[0]) and self.L[0] != self.R[0]:
+                return True
+            if is_letter(self.L[-1]) and is_letter(self.R[-1]) and self.L[-1] != self.R[-1]:
+                return True
+        return False
 
     def children(self) -> list:
         def merge_blocks(node: Node, letter: Letter, vanishing_vars: set) -> list:
@@ -232,7 +240,7 @@ class Node(object):
                     if letter0 != letter1:
                         result += merge_pair(self, letter0, letter1, vanishing_vars)
                 result += merge_blocks(self, letter0, vanishing_vars)
-        return result
+        return filter(lambda node: not node.bad(), result)
 
 
 def representative_eq(L: list, R: list) -> Node:
