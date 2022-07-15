@@ -37,6 +37,10 @@
     \newpage}
 \addto\captionsenglish{\renewcommand*\contentsname{Spis treści}}
 
+\addto\captionsenglish{
+	\renewcommand\refname{\Large \bf Bibliografia}
+}
+
 \title{Implementacja algorytmu dla równań słów}
 \date{}
 
@@ -68,21 +72,22 @@
 \newpage
 
 \section{Wstęp}
-Rozważmy problem równań napisów (równań słów w półgrupie wolnej). Mamy pewien ustalony alfabet, np. a, b, c, ..., oraz pewien zbiór zmiennych, np. X, Y, Z, .... Zastanawiamy się, czy da danego równania np. $$abYX = XYba$$ istnieje rozwiązanie. Rozwiązaniem takiego równania, o ile istnieje,
-jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. Dla tego przykładu jednym z rozwiązań jest
+Rozważmy problem równań napisów (równań słów w półgrupie wolnej). Mamy pewien ustalony alfabet, np.\ $a, b, c$, \ldots, oraz pewien zbiór zmiennych, np.\ $X, Y, Z$, \ldots. Zastanawiamy się, czy da danego równania np. $$abYX = XYba$$ istnieje rozwiązanie. Rozwiązaniem takiego równania, o ile istnieje,
+jest podstawienie (ciąg liter) za każdą zmienną występującą w równaniu, takie, że po zamianie zmiennych na ich podstawienia dwie strony równania rzeczywiście są równe jako słowa. Dla powyższego przykładu jednym z rozwiązań jest
 $$
 \begin{cases}
 X = aba \\
 Y = a.
 \end{cases}
 $$
-Przedstawimy tutaj algorytm rozwiązywania równań napisów autorstwa Artura Jeża. Główną ideą algorytmu jest skracanie fragmentów równania. Skracane są wystąpienia par sąsiednich liter oraz spójne bloki tej samej litery.
+Przedstawimy tu implementację najnowszego algorytmu rozwiązywania równań~\cite{DBLP:journals/jacm/Jez16}, działającego w pamięci wielomianowej.
+Główną ideą algorytmu jest skracanie fragmentów równania. Skracane są wystąpienia par sąsiednich liter oraz spójne bloki tej samej litery.
 Skracane fragmenty zastępowane są nowymi literami, spoza równania. Takie skrócenia dadzą nam kolejne równania, które dalej można upraszczać.
 
-Można pokazać, że jeżeli rozwiązanie istnieje, można do niego dojść w ten sposób, przechodząc tylko przez równania o długości nie większej niż $8n^2 + n$, gdzie $n$ jest długością (liczbą znaków) wyjściowego równania.
-Oczywiście, jeżeli rozwiązanie istnieje to istnieje też rozwiązanie, które nie używa liter innych niż występujące w wyjściowym równaniu.
-% Kacper: co dokładnie zacytować, pracę z delty?
-\newline\newline
+Można pokazać, że jeżeli rozwiązanie istnieje, można do niego dojść w ten sposób, przechodząc tylko przez równania o długości nie większej niż $8n^2 + n$, gdzie $n$ jest długością (liczbą znaków) wyjściowego równania (wariant dowodu z~\cite{DBLP:journals/jacm/Jez16})
+Ponadto, jeżeli rozwiązanie istnieje to istnieje też rozwiązanie, które nie używa liter innych niż występujące w wyjściowym równaniu~\cite{DBLP:journals/jacm/Jez16}.
+
+
 Całość kodu źródłowego algorytmu w języku Python można znaleźć \\ w publicznym repozytorium: \\ $\hyperlink{https://github.com/kacper776/rownania_slow}{https://github.com/kacper776/rownania\_slow}$
 
 \newpage
@@ -218,7 +223,7 @@ Dalej --- interesuje nas, które z bloków po lewej stronie równania będą odp
 Algorytm iteruje się po wszystkich parach $(a, b)$ różnych liter z równania i próbuje złączyć parę $ab$.
 Dla danej pary $ab$ dla każdej zmiennej z równania sprawdzane są wszystkie możliwości tego, czy w szukanym rozwiązaniu zmienna zaczyna się na $b$ i czy kończy się na $a$. Dla każdej takiej możliwości, dla każdej zmiennej $X$, jeżeli zaczyna się ona na $b$ jest zastępowana przez $bX$, a początek jej aktualnego podstawienia jest wydłużany o $b$. Analogicznie, jeżeli zaczyna się ona na $a$ jest zastępowana przez $Xa$, a koniec jej aktualnego podstawienia jest wydłużany o $a$. Następnie każda para $ab$ występująca w równaniu zastępowana jest przez nową literę $c$, spoza równania.
 
-Dla niektórych równań można bardzo łatwo znaleźć równoważne równanie, które jest krótsze. Jeżeli strony równania mają wspólny prefiks (lub wspólny prefiks), można go usunąć. Przykładowo równanie $aXYba = aXXYa$ można uprościć do $Yb = XY$. Za każdym razem, gdy algorytm tworzy dziecko wierzchołka, upraszcza jego równanie w ten sposób, aby zredukować liczbę wierzchołków do przeszukania. Dodatkowo, wszystkie wierzchołki, których obie strony równań zaczynają lub kończą się różnymi literami są od razu odrzucane.
+Dla niektórych równań można bardzo łatwo znaleźć równoważne równanie, które jest krótsze. Jeżeli strony równania mają wspólny prefiks (lub wspólny prefiks), można go usunąć. Przykładowo równanie $aXYba = aXXYa$ można uprościć do $Yb = XY$. Za każdym razem, gdy algorytm tworzy dziecko wierzchołka, upraszcza jego równanie w ten sposób, aby zredukować liczbę wierzchołków do przeszukania. Dodatkowo, wszystkie wierzchołki, których obie strony równań zaczynają lub kończą się różnymi literami, są od razu odrzucane.
 
 \subsection{Przeszukiwanie grafu}
 Graf trawersowany jest za pomocą przeszukiwania wszerz --- takim sposobem, mimo, że cały graf ma długość wykładniczą względem długości początkowego równania, możemy po nim przechodzić i robić jakikolwiek postęp.
@@ -312,5 +317,8 @@ def representative_eq(L: list, R: list) -> Node:
 \end{verbatim}
 
 Funkcja representative\_eq() zwraca równanie izomorficzne z danym równaniem, taki że spośród wszystkich takich, jego ciąg numerów kolejnych wystąpień liter jest najmniejszy leksykograficznie. 
+
+\bibliographystyle{plain}
+\bibliography{bibliography}
 
 \end{document}
